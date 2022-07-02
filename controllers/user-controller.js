@@ -1,4 +1,4 @@
-const { Users } = require('../models');
+const { Users, Thoughts } = require('../models');
 
 const userController = {
     getAllUsers(req, res) {
@@ -67,7 +67,7 @@ const userController = {
 
   addFriend({ params }, res) {
     Users.findOneAndUpdate(
-        { _id: params.id },
+        { _id: params.userId },
         { $push: { friends: params.friendId }},
         { new: true, runValidators: true }
     )
@@ -94,7 +94,12 @@ const userController = {
           res.status(404).json({ message: 'No user found with this id!' });
           return;
         }
-        res.json(dbUserData);
+        // remove user's comments
+        Thoughts.deleteMany ({ username: dbUserData.username })
+        .then (() => {
+        res.json({ message: 'User deleted'});
+      })
+      .catch(err => res.status(400).json(err));
       })
       .catch(err => res.status(400).json(err));
   },
@@ -102,8 +107,8 @@ const userController = {
 // delete user
 deleteFriend({ params }, res) {
     Users.findOneAndUpdate(
-        { _id: params.id },
-        { $push: { friends: params.friendId }},
+        { _id: params.userId },
+        { $pull: { friends: params.friendId }},
         { new: true }
         )
         .populate({
